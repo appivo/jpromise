@@ -19,16 +19,45 @@ public interface Promise {
 	PENDING, RESOLVED, REJECTED
     }
 
+    /**
+     * Get the state of this promise
+     * @return
+     */
     State getState();
 
+    /**
+     * Get the value that this promise has resolved to. If the promise has not yet resolved this will return null.
+     * @return
+     * @param <T>
+     */
     <T> T getValue();
 
+    /**
+     * Check if this promise is still pending.
+     * @return
+     */
     boolean isPending();
 
+    /**
+     * Check if this promise is resolved
+     * @return
+     */
     boolean isResolved();
 
+    /**
+     * Check if this promise is rejected
+     * @return
+     */
     boolean isRejected();
 
+    /**
+     * Add a callback for when this promise has resolved.
+     *
+     * @param resolve Function to invoke when this promise has been resolved
+     * @return A new promise
+     * @param <T>
+     * @param <U>
+     */
     <T,U> Promise then(Function<T, U> resolve);
 
     <T> Promise then(Consumer<T> resolve);
@@ -57,6 +86,12 @@ public interface Promise {
         return def;
     }
 
+    /**
+     * Create a promise that resolves when all of the provided promises have been successfully resolved. If any of the promises gets rejected this promise will also be rejected.
+     * @param promises
+     * @return
+     * @param <T>
+     */
     public static <T> Promise all(Promise... promises) {
         final List<T> values = new ArrayList<>();
         return multi((value, count) -> {
