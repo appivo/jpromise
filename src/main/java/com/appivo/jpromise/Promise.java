@@ -21,7 +21,7 @@ public interface Promise {
 
     /**
      * Get the state of this promise
-     * @return
+     * @return current state of this promise
      */
     State getState();
 
@@ -34,19 +34,19 @@ public interface Promise {
 
     /**
      * Check if this promise is still pending.
-     * @return
+     * @return true if this promise is still pending
      */
     boolean isPending();
 
     /**
      * Check if this promise is resolved
-     * @return
+     * @return true if this promise has been resolved
      */
     boolean isResolved();
 
     /**
      * Check if this promise is rejected
-     * @return
+     * @return true if this promise has been rejected
      */
     boolean isRejected();
 
@@ -74,13 +74,25 @@ public interface Promise {
 
     <T,U,V> Promise then(Function<T, U> resolve, Consumer<V> reject);
 
-    public static <T> Promise resolve(T value) {
+    /**
+     * Create a resolved promise
+     * @param value Resolved value
+     * @return Promise
+     * @param <T>
+     */
+    static <T> Promise resolve(T value) {
 	Deferred def = new Deferred();
         def.resolve(value);
         return def;
     }
 
-    public static <T> Promise reject(T error) {
+    /**
+     * Create a rejected promise
+     * @param error Error
+     * @return Promise
+     * @param <T>
+     */
+    static <T> Promise reject(T error) {
         Deferred def = new Deferred();
         def.reject(error);
         return def;
@@ -92,7 +104,7 @@ public interface Promise {
      * @return
      * @param <T>
      */
-    public static <T> Promise all(Promise... promises) {
+    static <T> Promise all(Promise... promises) {
         final List<T> values = new ArrayList<>();
         return multi((value, count) -> {
             values.add((T)value);
@@ -106,7 +118,7 @@ public interface Promise {
         }, promises);
     }
 
-    public static <T> Promise any(Promise... promises) {
+    static <T> Promise any(Promise... promises) {
         return multi((value, count) -> {
             return new Response(State.RESOLVED, value);
         }, (err) -> {
@@ -114,7 +126,7 @@ public interface Promise {
         }, promises);
     }
 
-    public static <T> Promise race(Promise... promises) {
+    static <T> Promise race(Promise... promises) {
         return multi((value, count) -> {
             return new Response(State.RESOLVED, value);
         }, (err) -> {
@@ -141,7 +153,7 @@ public interface Promise {
         return def;
     }
 
-    static class Response<T> {
+    class Response<T> {
         State state;
         T value;
 

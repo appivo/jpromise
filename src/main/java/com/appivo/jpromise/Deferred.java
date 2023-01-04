@@ -13,11 +13,15 @@ import java.util.function.Supplier;
  */
 public class Deferred implements Promise {
 
+    protected enum InvocationType {
+	RESOLVE, REJECT
+    }
+
     private State state = State.PENDING;
     private Object value;
     private Object error;
-    private List<Function> onFullfilment;
-    private List<Consumer> onRejection;
+    private List<Function<?,?>> onFullfilment;
+    private List<Consumer<?>> onRejection;
 
     public Deferred() {
     }
@@ -42,30 +46,46 @@ public class Deferred implements Promise {
 	return (T)value;
     }
 
+    /**
+     * Resolve this deferred without a value
+     */
     public void resolve() {
 	resolve(null);
     }
 
+    /**
+     * Resolve this deferred with a value
+     * @param t Resolved value
+     * @param <T>
+     */
     public <T> void resolve(T t) {
 	setState(State.RESOLVED);
 	this.value = t;
 	if (onFullfilment != null) {
 	    for (Function resolve : onFullfilment) {
-		execute(resolve, value);
+		execute(InvocationType.RESOLVE, resolve, value);
 	    }
 	}
     }
 
+    /**
+     * Reject this deferred
+     */
     public void reject() {
 	reject(null);
     }
 
+    /**
+     * Resolve this deferred with an error
+     * @param t Error
+     * @param <T>
+     */
     public <T> void reject(T t) {
 	setState(State.REJECTED);
 	this.error = t;
 	if (onRejection != null) {
 	    for (Consumer reject : onRejection) {
-		execute(reject, error);
+		execute(InvocationType.REJECT, reject, error);
 	    }
 	}
     }
@@ -108,9 +128,7 @@ public class Deferred implements Promise {
 
     @Override
     public <T> Promise then(Supplier<T> resolve) {
-	return then((T value) -> {
-	    return resolve.get();
-	});
+	return then((T value) -> resolve.get());
     }
 
     @Override
@@ -147,31 +165,66 @@ public class Deferred implements Promise {
 		return val;
 	    } catch (Throwable err) {
 		def.reject(err);
+		handleError(InvocationType.RESOLVE, resolve, err);
 		return null;
 	    }
 	};
 	Consumer<V> rej = (error) -> {
-	    reject.accept(error);
+	    try {
+		reject.accept(error);
+	    } catch (Throwable err) {
+		handleError(InvocationType.REJECT, reject, err);
+	    }
 	    def.reject(error);
 	};
 	if (resolve != null) {
 	    addResolver(res);
 	}
 	if (reject != null) {
-	    addRejector(reject);
+	    addRejector(rej);
 	}
 	return def;
     }
 
-    private void execute(Object function, final Object value) {
+    private void execute(InvocationType type, Object function, final Object value) {
 	PromiseExecutor mgr = PromiseExecutor.getInstance();
 	mgr.queue(() -> {
-	    if (function instanceof Function) {
-		((Function)function).apply(value);
-	    } else if (function instanceof Consumer) {
-		((Consumer)function).accept(value);
-	    }
+	    invokeCallback(type, function, value);
 	});
+    }
+
+    private void invokeCallback(InvocationType type, Object function, final Object value) {
+	preCallback(type, function, value);
+	try {
+	    if (function instanceof Function) {
+		((Function) function).apply(value);
+	    } else if (function instanceof Consumer) {
+		((Consumer) function).accept(value);
+	    }
+	} finally {
+	    postCallback(type, function, value);
+	}
+    }
+
+    protected void preCallback(InvocationType type, final Object function, final Object value) {
+    }
+
+    protected void postCallback(InvocationType type, final Object function, final Object value) {
+    }
+
+    /**
+     * Handle an error that occured while invoking a callback
+     * @param type Type of invocation
+     * @param function callback
+     * @param error Error
+     */
+    protected void handleError(InvocationType type, Object function, Throwable error) {
+    }
+
+    protected void resolveAdded(Function resolve) {
+    }
+
+    protected void rejectAdded(Consumer reject) {
     }
 
     private synchronized void addResolver(Function resolve) {
@@ -179,9 +232,10 @@ public class Deferred implements Promise {
 	    onFullfilment = new ArrayList<>();
 	}
 	if (isPending()) {
+	    resolveAdded(resolve);
 	    onFullfilment.add(resolve);
 	} else if (isResolved()){
-	    execute(resolve, value);
+	    execute(InvocationType.RESOLVE, resolve, value);
 	}
     }
 
@@ -190,9 +244,10 @@ public class Deferred implements Promise {
 	    onRejection = new ArrayList<>();
 	}
 	if (isPending()) {
+	    rejectAdded(reject);
 	    onRejection.add(reject);
 	} else if (isRejected()){
-	    execute(reject, error);
+	    execute(InvocationType.REJECT, reject, error);
 	}
     }
 }
