@@ -4,7 +4,7 @@
   <groupId>com.appivo.jpromise</groupId>
   <artifactId>core</artifactId>
   <packaging>jar</packaging>
-  <version>0.5</version>
+  <version>0.6</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>A java implementation of an ES6-like promise, great for interop use cases.</description>
   <url>http://maven.apache.org</url>
