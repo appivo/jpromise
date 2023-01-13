@@ -14,11 +14,12 @@ public class PromiseExecutor {
     ExecutorService executor;
 
     protected PromiseExecutor() {
-        executor = Executors.newWorkStealingPool();
+        executor = Executors.newCachedThreadPool();
     }
 
     protected void queue(Runnable task) {
-        executor.submit(task);
+        //executor.submit(task);
+        task.run();
     }
 
     public final static void setImplementation(PromiseExecutor inst) {

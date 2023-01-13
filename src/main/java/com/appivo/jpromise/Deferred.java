@@ -55,12 +55,16 @@ public class Deferred implements Promise {
 
     /**
      * Resolve this deferred with a value
-     * @param t Resolved value
+     * @param value Resolved value
      * @param <T>
      */
-    public <T> void resolve(T t) {
+    public <T> void resolve(T value) {
 	setState(State.RESOLVED);
-	this.value = t;
+	this.value = value;
+	executeResolve(value);
+    }
+
+    protected <T> void executeResolve(T value) {
 	if (onFullfilment != null) {
 	    for (Function resolve : onFullfilment) {
 		execute(InvocationType.RESOLVE, resolve, value);
@@ -77,12 +81,16 @@ public class Deferred implements Promise {
 
     /**
      * Resolve this deferred with an error
-     * @param t Error
+     * @param error Error
      * @param <T>
      */
-    public <T> void reject(T t) {
+    public <T> void reject(T error) {
 	setState(State.REJECTED);
-	this.error = t;
+	this.error = error;
+	executeReject(error);
+    }
+
+    protected <T> void executeReject(T error) {
 	if (onRejection != null) {
 	    for (Consumer reject : onRejection) {
 		execute(InvocationType.REJECT, reject, error);
@@ -193,7 +201,7 @@ public class Deferred implements Promise {
 	});
     }
 
-    private void invokeCallback(InvocationType type, Object function, final Object value) {
+    protected void invokeCallback(InvocationType type, Object function, final Object value) {
 	preCallback(type, function, value);
 	try {
 	    if (function instanceof Function) {
@@ -235,7 +243,7 @@ public class Deferred implements Promise {
 	    resolveAdded(resolve);
 	    onFullfilment.add(resolve);
 	} else if (isResolved()){
-	    execute(InvocationType.RESOLVE, resolve, value);
+	    invokeCallback(InvocationType.RESOLVE, resolve, value);
 	}
     }
 
@@ -247,7 +255,7 @@ public class Deferred implements Promise {
 	    rejectAdded(reject);
 	    onRejection.add(reject);
 	} else if (isRejected()){
-	    execute(InvocationType.REJECT, reject, error);
+	    invokeCallback(InvocationType.REJECT, reject, error);
 	}
     }
 }
