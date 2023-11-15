@@ -4,13 +4,14 @@
   <groupId>com.appivo.jpromise</groupId>
   <artifactId>core</artifactId>
   <packaging>jar</packaging>
-  <version>0.7</version>
+  <version>0.8</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>A java implementation of an ES6-like promise, great for interop use cases.</description>
   <url>http://maven.apache.org</url>
 
   <properties>
     <junit-jupiter.version>5.9.1</junit-jupiter.version>
+    <graalvm.version>23.0.2</graalvm.version>
   </properties>
 
   <licenses>
@@ -49,6 +50,16 @@
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
+      <version>${graalvm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.truffle</groupId>
+      <artifactId>truffle-api</artifactId>
+      <version>${graalvm.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>

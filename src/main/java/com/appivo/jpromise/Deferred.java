@@ -1,5 +1,7 @@
 package com.appivo.jpromise;
 
+import org.graalvm.polyglot.Value;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -65,9 +67,24 @@ public class Deferred implements Promise {
     }
 
     protected <T> void executeResolve(T value) {
-	if (onFullfilment != null) {
-	    for (Function resolve : onFullfilment) {
-		execute(InvocationType.RESOLVE, resolve, value);
+	boolean done = false;
+	if (value instanceof Value) {
+	    Value val = (Value)value;
+	    if (val.hasMember("then") && val.canInvokeMember("then")) {
+		done = true;
+		val.invokeMember("then", (Consumer)this::executeResolve, (Consumer)this::executeReject);
+	    }
+	}
+	if (!done) {
+	    if (value instanceof Promise) {
+		Promise p = (Promise) value;
+		p.then((Consumer) this::executeResolve, (Consumer) this::executeReject);
+	    } else {
+		if (onFullfilment != null) {
+		    for (Function resolve : onFullfilment) {
+			execute(InvocationType.RESOLVE, resolve, value);
+		    }
+		}
 	    }
 	}
     }
@@ -205,7 +222,7 @@ public class Deferred implements Promise {
 	preCallback(type, function, value);
 	try {
 	    if (function instanceof Function) {
-		((Function) function).apply(value);
+		Object val = ((Function) function).apply(value);
 	    } else if (function instanceof Consumer) {
 		((Consumer) function).accept(value);
 	    }

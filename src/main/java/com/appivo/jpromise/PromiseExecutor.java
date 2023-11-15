@@ -1,40 +1,29 @@
 package com.appivo.jpromise;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 /**
  * An executor of promise callbacks. You can subclass this class and set your implementation using the setImplementation-method.
  *
  * @author Johan Eriksson
  */
-public class PromiseExecutor {
+public abstract class PromiseExecutor {
     private static PromiseExecutor instance;
 
-    ExecutorService executor;
-
-    protected PromiseExecutor() {
-        executor = Executors.newCachedThreadPool();
-    }
-
-    protected void queue(Runnable task) {
-        //executor.submit(task);
-        task.run();
-    }
-
-    public final static void setImplementation(PromiseExecutor inst) {
+    public static void setImplementation(PromiseExecutor inst) {
         instance = inst;
     }
 
-    static PromiseExecutor getInstance() {
+    public static PromiseExecutor getInstance() {
         if (instance == null) {
-            instance = new PromiseExecutor();
+            instance = new DefaultExecutor();
         }
         return instance;
     }
 
+    protected void queue(Runnable task) {
+        task.run();
+    }
+
     protected void doShutdown() {
-        executor.shutdown();
     }
 
     public final void shutdown() {
